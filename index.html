@@ -64,6 +64,9 @@
     </div>
 
     <script>
+        // 配置后端API地址
+        const API_URL = 'https://你的后端地址.com/chat';  // 将在部署后更新
+
         $(document).ready(function () {
             // 发送消息
             function sendMessage() {
@@ -79,7 +82,7 @@
 
                 // 发送AJAX请求到后端
                 $.ajax({
-                    url: 'http://localhost:8000/chat',
+                    url: API_URL,
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({

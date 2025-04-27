@@ -4,6 +4,10 @@ from app.controllers.chat_controller import router as chat_router
 
 app = FastAPI(title="智能问答系统API")
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to smartQA!"}
+
 # 配置CORS
 app.add_middleware(
     CORSMiddleware,
