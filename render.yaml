@@ -2,7 +2,9 @@ services:
   - type: web
     name: qa-system-backend
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: 
+      pip install -r requirements.txt
+      python init_db.py
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
