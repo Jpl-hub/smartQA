@@ -116,3 +116,5 @@ class ChatService:
         
         messages = crud.get_messages_by_conversation(db, conversation_id)
         return conversation, messages
+    def get_or_create_user(self, db, user_id):
+        return crud.get_or_create_user(db, user_id)
