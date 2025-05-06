@@ -10,4 +10,4 @@ services:
       - key: API_KEY
         sync: false  # 需要在Render控制台设置
       - key: DATABASE_URL
-        value: mysql+pymysql://root:abc123@mysql1-36vw:3306/smartqa_db
+        value: mysql+pymysql://root:abc123@mysql-36vw:3306/smartqa_db
