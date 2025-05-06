@@ -4,3 +4,8 @@ requests==2.31.0
 pydantic==2.5.3
 pytest==7.4.4
 httpx==0.25.2
+sqlalchemy==2.0.23
+pymysql==1.1.0
+cryptography==41.0.5
+python-dotenv==1.0.0
+uuid==1.30
