@@ -7,23 +7,56 @@
     <title>智能问答系统</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- jQuery -->
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- jQuery (只用于DOM操作) -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- UUID生成 -->
+    <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuidv4.min.js"></script>
     <style>
         body {
             background-color: #f8f9fa;
         }
 
-        .chat-container {
-            max-width: 800px;
+        .app-container {
+            max-width: 1200px;
             margin: 50px auto;
+            display: flex;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-right: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background-color: white;
+            border-radius: 10px 10px 0 0;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .chat-messages {
             height: 500px;
             overflow-y: auto;
             border: 1px solid #dee2e6;
-            border-radius: 10px;
+            border-radius: 0 0 10px 10px;
             background-color: white;
             padding: 20px;
             margin-bottom: 20px;
@@ -48,63 +81,278 @@
         .message-content {
             white-space: pre-wrap;
         }
+
+        .conversation-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .conversation-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .conversation-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .conversation-item.active {
+            background-color: #e9ecef;
+        }
+
+        .role-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .role-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .role-item.active {
+            border: 2px solid #007bff;
+        }
+
+        .role-icon {
+            font-size: 2rem;
+            margin-right: 10px;
+        }
+
+        .action-button {
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin-right: 5px;
+        }
+
+        .typing-indicator {
+            display: inline-block;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #007bff;
+            margin-right: 3px;
+            animation: typing 1s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateY(-3px);
+            }
+
+            100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+        }
+
+        .role-selector {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            z-index: 1000;
+            width: 300px;
+        }
+
+        .user-welcome {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container chat-container">
-        <h1 class="text-center mb-4">智能问答系统</h1>
-        <div class="chat-messages" id="chatMessages">
-            <!-- 聊天消息会显示在这里 -->
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <h5 class="mb-3">智能问答系统</h5>
+            <div class="user-welcome">
+                欢迎使用，用户ID: <span id="userId"></span>
+            </div>
+
+            <div class="mb-4">
+                <button class="btn btn-primary w-100" id="newChatBtn">
+                    <i class="bi bi-plus-circle"></i> 新建对话
+                </button>
+            </div>
+
+            <h6>对话历史</h6>
+            <div class="conversation-list" id="conversationList">
+                <!-- 对话历史将在这里显示 -->
+                <div class="text-center text-muted py-3">暂无历史对话</div>
+            </div>
         </div>
-        <div class="input-group">
-            <input type="text" class="form-control" id="userInput" placeholder="请输入您的问题...">
-            <button class="btn btn-primary" type="button" id="sendButton">发送</button>
+
+        <!-- 聊天区域 -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <div>
+                    <h5 id="currentTitle">新对话</h5>
+                    <small id="currentRole" class="text-muted">通用助手</small>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm action-button" id="clearBtn">
+                        <i class="bi bi-eraser"></i> 清空对话
+                    </button>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- 欢迎消息 -->
+                <div class="message ai-message">
+                    <div class="message-content">你好！我是智能助手，有什么可以帮助你的吗？</div>
+                </div>
+            </div>
+            <div class="input-group">
+                <input type="text" class="form-control" id="userInput" placeholder="请输入您的问题...">
+                <button class="btn btn-primary" type="button" id="sendButton">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 角色选择器 -->
+    <div class="role-selector" id="roleSelector">
+        <h6 class="mb-3">选择AI角色</h6>
+        <div id="roleList">
+            <!-- AI角色将在这里显示 -->
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // 配置后端API地址
-        const API_URL = 'https://smartqa.onrender.com' + '/chat';  // 将在部署后更新
+        /**
+         * 模块化应用结构
+         * 使用立即执行函数表达式(IIFE)创建模块
+         */
 
-        $(document).ready(function () {
-            // 发送消息
-            function sendMessage() {
-                const userInput = $('#userInput').val().trim();
-                if (!userInput) return;
+        /**
+         * 配置模块 - 存储应用配置
+         */
+        const Config = (function () {
+            // 配置后端API地址
+            const API_URL = 'https://smartqa.onrender.com';
 
-                // 显示用户消息
-                appendMessage('user', userInput);
-                $('#userInput').val('');
+            return {
+                getApiUrl: () => API_URL,
+                getApiEndpoint: (endpoint) => `${API_URL}/${endpoint}`
+            };
+        })();
 
-                // 显示加载中
-                appendMessage('ai', '思考中...');
+        /**
+         * 用户模块 - 管理用户相关功能
+         */
+        const UserModule = (function () {
+            let userId;
 
-                // 发送AJAX请求到后端
-                $.ajax({
-                    url: API_URL,
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({
-                        message: userInput
-                    }),
-                    success: function (response) {
-                        // 移除"思考中..."消息
-                        $('.chat-messages .message').last().remove();
-                        // 显示AI回复
-                        appendMessage('ai', response.response);
-                    },
-                    error: function (xhr, status, error) {
-                        // 移除"思考中..."消息
-                        $('.chat-messages .message').last().remove();
-                        // 显示错误消息
-                        appendMessage('ai', '抱歉，出现了错误：' + error);
-                    }
+            // 初始化用户ID
+            const init = () => {
+                userId = localStorage.getItem('userId');
+                if (!userId) {
+                    userId = uuidv4();
+                    localStorage.setItem('userId', userId);
+                }
+                $('#userId').text(userId.substring(0, 8) + '...');
+                return userId;
+            };
+
+            return {
+                init,
+                getUserId: () => userId
+            };
+        })();
+
+        /**
+         * API模块 - 处理与后端的通信
+         */
+        const ApiService = (function () {
+            // 创建axios实例
+            const api = axios.create({
+                baseURL: Config.getApiUrl(),
+                timeout: 30000,  // 请求超时时间
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // 发送聊天消息
+            const sendChatMessage = (message, conversationId, roleId, userId) => {
+                return api.post('/chat', {
+                    message,
+                    conversation_id: conversationId,
+                    role_id: conversationId ? null : roleId,
+                    user_id: userId
                 });
-            }
+            };
 
+            // 获取所有AI角色
+            const getRoles = () => {
+                return api.get('/roles');
+            };
+
+            // 获取用户的所有对话
+            const getUserConversations = (userId) => {
+                return api.get(`/conversations/${userId}`);
+            };
+
+            // 获取特定对话的消息
+            const getConversationMessages = (conversationId) => {
+                return api.get(`/conversation/${conversationId}`);
+            };
+
+            // 创建新对话
+            const createConversation = (userId, roleId, title) => {
+                return api.post('/conversation', {
+                    user_id: userId,
+                    role_id: roleId,
+                    title
+                });
+            };
+
+            return {
+                sendChatMessage,
+                getRoles,
+                getUserConversations,
+                getConversationMessages,
+                createConversation
+            };
+        })();
+
+        /**
+         * UI模块 - 处理用户界面更新
+         */
+        const UIModule = (function () {
             // 添加消息到聊天窗口
-            function appendMessage(type, content) {
+            const appendMessage = (type, content) => {
                 const messageClass = type === 'user' ? 'user-message' : 'ai-message';
                 const message = `
                     <div class="message ${messageClass}">
@@ -114,17 +362,340 @@
                 $('#chatMessages').append(message);
                 // 滚动到底部
                 $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
-            }
+            };
 
-            // 点击发送按钮
-            $('#sendButton').click(sendMessage);
+            // 显示AI角色列表
+            const displayRoles = (roles, currentRoleId, onRoleSelect) => {
+                const roleList = $('#roleList');
+                roleList.empty();
 
-            // 按回车键发送
-            $('#userInput').keypress(function (e) {
-                if (e.which === 13) {
-                    sendMessage();
+                const icons = ['bi-robot', 'bi-code-square', 'bi-book', 'bi-heart'];
+                const colors = ['primary', 'success', 'info', 'warning'];
+
+                roles.forEach((role, index) => {
+                    const icon = icons[index % icons.length];
+                    const color = colors[index % colors.length];
+
+                    const roleItem = `
+                        <div class="role-item ${role.id === currentRoleId ? 'active' : ''}" data-role-id="${role.id}">
+                            <div class="d-flex align-items-center">
+                                <div class="role-icon text-${color}">
+                                    <i class="bi ${icon}"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">${role.name}</h6>
+                                    <small class="text-muted">${role.description}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    roleList.append(roleItem);
+                });
+
+                // 角色选择事件
+                $('.role-item').click(function () {
+                    const roleId = $(this).data('role-id');
+
+                    // 更新UI
+                    $('.role-item').removeClass('active');
+                    $(this).addClass('active');
+
+                    // 更新当前角色显示
+                    const roleName = $(this).find('h6').text();
+                    $('#currentRole').text(roleName);
+
+                    // 调用回调
+                    if (onRoleSelect) {
+                        onRoleSelect(roleId, roleName);
+                    }
+                });
+            };
+
+            // 显示对话历史
+            const displayConversations = (conversations, currentConversationId, onConversationSelect) => {
+                const conversationList = $('#conversationList');
+                conversationList.empty();
+
+                if (conversations.length === 0) {
+                    conversationList.html('<div class="text-center text-muted py-3">暂无历史对话</div>');
+                    return;
                 }
-            });
+
+                conversations.forEach(conv => {
+                    const isActive = conv.id === currentConversationId;
+                    const convItem = `
+                        <div class="conversation-item ${isActive ? 'active' : ''}" data-conv-id="${conv.id}" data-role-id="${conv.role_id}">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>${conv.title}</strong>
+                                    <div><small class="text-muted">${conv.role_name}</small></div>
+                                </div>
+                                <small class="text-muted">${formatDate(conv.updated_at)}</small>
+                            </div>
+                        </div>
+                    `;
+                    conversationList.append(convItem);
+                });
+
+                // 对话选择事件
+                $('.conversation-item').click(function () {
+                    const convId = $(this).data('conv-id');
+                    const roleId = $(this).data('role-id');
+
+                    // 更新UI
+                    $('.conversation-item').removeClass('active');
+                    $(this).addClass('active');
+
+                    // 更新标题和角色
+                    const title = $(this).find('strong').text();
+                    const roleName = $(this).find('small').text();
+
+                    $('#currentTitle').text(title);
+                    $('#currentRole').text(roleName);
+
+                    // 调用回调
+                    if (onConversationSelect) {
+                        onConversationSelect(convId, roleId, title, roleName);
+                    }
+                });
+            };
+
+            // 清空聊天消息
+            const clearChatMessages = () => {
+                $('#chatMessages').empty();
+            };
+
+            // 设置当前对话标题
+            const setConversationTitle = (title) => {
+                $('#currentTitle').text(title);
+            };
+
+            // 设置当前角色
+            const setCurrentRole = (roleName) => {
+                $('#currentRole').text(roleName);
+            };
+
+            // 显示错误消息
+            const showError = (message) => {
+                appendMessage('ai', `<div class="text-danger">错误: ${message}</div>`);
+            };
+
+            // 显示加载指示器
+            const showLoadingIndicator = () => {
+                appendMessage('ai', '<div class="typing-indicator"><span></span><span></span><span></span></div>');
+            };
+
+            // 移除最后一条消息（通常是加载指示器）
+            const removeLastMessage = () => {
+                $('.chat-messages .message').last().remove();
+            };
+
+            return {
+                appendMessage,
+                displayRoles,
+                displayConversations,
+                clearChatMessages,
+                setConversationTitle,
+                setCurrentRole,
+                showError,
+                showLoadingIndicator,
+                removeLastMessage
+            };
+        })();
+
+        /**
+         * 工具模块 - 提供辅助功能
+         */
+        const UtilsModule = (function () {
+            // 格式化日期
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
+                const today = new Date();
+
+                if (date.toDateString() === today.toDateString()) {
+                    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+                }
+            };
+
+            return {
+                formatDate
+            };
+        })();
+
+        /**
+         * 主应用模块 - 协调其他模块的工作
+         */
+        const App = (function () {
+            // 状态变量
+            let currentConversationId = null;
+            let currentRoleId = 1; // 默认为通用助手
+
+            // 初始化
+            const init = () => {
+                // 初始化用户
+                const userId = UserModule.init();
+
+                // 加载AI角色
+                loadRoles();
+
+                // 加载用户对话历史
+                loadConversations();
+
+                // 绑定事件处理程序
+                setupEventHandlers();
+            };
+
+            // 发送消息
+            const sendMessage = () => {
+                const userInput = $('#userInput').val().trim();
+                if (!userInput) return;
+
+                // 显示用户消息
+                UIModule.appendMessage('user', userInput);
+                $('#userInput').val('');
+
+                // 显示加载中
+                UIModule.showLoadingIndicator();
+
+                // 发送请求
+                ApiService.sendChatMessage(
+                    userInput,
+                    currentConversationId,
+                    currentRoleId,
+                    UserModule.getUserId()
+                )
+                    .then(response => {
+                        // 移除加载指示器
+                        UIModule.removeLastMessage();
+
+                        // 显示AI回复
+                        UIModule.appendMessage('ai', response.data.response);
+
+                        // 更新当前对话ID
+                        if (!currentConversationId) {
+                            currentConversationId = response.data.conversation_id;
+                            // 重新加载对话列表
+                            loadConversations();
+                        }
+                    })
+                    .catch(error => {
+                        // 移除加载指示器
+                        UIModule.removeLastMessage();
+
+                        // 显示错误消息
+                        const errorMessage = error.response ? error.response.data.detail : error.message;
+                        UIModule.showError(errorMessage);
+                        console.error('发送消息失败:', error);
+                    });
+            };
+
+            // 加载AI角色
+            const loadRoles = () => {
+                ApiService.getRoles()
+                    .then(response => {
+                        UIModule.displayRoles(response.data, currentRoleId, (roleId, roleName) => {
+                            currentRoleId = roleId;
+                        });
+                    })
+                    .catch(error => {
+                        console.error('加载角色失败:', error);
+                        $('#roleList').html('<div class="alert alert-danger">加载AI角色失败</div>');
+                    });
+            };
+
+            // 加载用户对话历史
+            const loadConversations = () => {
+                ApiService.getUserConversations(UserModule.getUserId())
+                    .then(response => {
+                        UIModule.displayConversations(response.data, currentConversationId, (convId, roleId) => {
+                            loadConversation(convId, roleId);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('加载对话历史失败:', error);
+                    });
+            };
+
+            // 加载特定对话
+            const loadConversation = (convId, roleId) => {
+                ApiService.getConversationMessages(convId)
+                    .then(response => {
+                        // 清空聊天窗口
+                        UIModule.clearChatMessages();
+
+                        // 显示消息
+                        response.data.forEach(msg => {
+                            UIModule.appendMessage(msg.role, msg.content);
+                        });
+
+                        // 更新当前对话ID和角色
+                        currentConversationId = convId;
+                        currentRoleId = roleId;
+                    })
+                    .catch(error => {
+                        console.error('加载对话消息失败:', error);
+                        UIModule.showError('加载对话消息失败');
+                    });
+            };
+
+            // 创建新对话
+            const createNewConversation = () => {
+                // 清空聊天窗口
+                UIModule.clearChatMessages();
+
+                // 添加欢迎消息
+                UIModule.appendMessage('ai', '你好！我是智能助手，有什么可以帮助你的吗？');
+
+                // 重置当前对话ID
+                currentConversationId = null;
+
+                // 更新UI
+                UIModule.setConversationTitle('新对话');
+
+                // 根据当前选择的角色更新
+                const roleName = $('.role-item.active h6').text() || '通用助手';
+                UIModule.setCurrentRole(roleName);
+            };
+
+            // 设置事件处理程序
+            const setupEventHandlers = () => {
+                // 发送按钮点击
+                $('#sendButton').click(sendMessage);
+
+                // 按回车键发送
+                $('#userInput').keypress(function (e) {
+                    if (e.which === 13) {
+                        sendMessage();
+                    }
+                });
+
+                // 新建对话
+                $('#newChatBtn').click(createNewConversation);
+
+                // 清空对话
+                $('#clearBtn').click(function () {
+                    if (currentConversationId) {
+                        UIModule.clearChatMessages();
+                        UIModule.appendMessage('ai', '对话已清空，有什么可以帮助你的吗？');
+                    }
+                });
+            };
+
+            return {
+                init
+            };
+        })();
+
+        // 格式化日期函数（全局）
+        function formatDate(dateString) {
+            return UtilsModule.formatDate(dateString);
+        }
+
+        // 初始化应用
+        $(document).ready(function () {
+            App.init();
         });
     </script>
 </body>
