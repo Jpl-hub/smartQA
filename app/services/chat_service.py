@@ -14,7 +14,7 @@ class ChatService:
     def __init__(self):
         self.api_key = "sk-owciyggqpjmjgqnnhhbganzfayhyhpqnllgefajgoipbuidz"
         self.api_url = "https://api.siliconflow.cn/v1/chat/completions"
-        self.model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+        self.model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
     
     def get_ai_response(self, db: Session, user_message: str, conversation_id: Optional[int] = None, role_id: Optional[int] = None, user_id: Optional[str] = None) -> Dict:
         """
